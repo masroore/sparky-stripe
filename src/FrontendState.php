@@ -32,7 +32,7 @@ class FrontendState
 
         $plans = static::getPlans($type, $billable);
 
-        $plan = $subscription && $subscription->active()
+        $plan = $subscription && ($subscription->active() || $subscription->pastDue())
                     ? $plans->firstWhere('id', $subscription->stripe_price)
                     : null;
 
@@ -76,6 +76,13 @@ class FrontendState
             'defaultInterval' => config('spark.billables.'.$type.'.default_interval', 'monthly'),
             'genericTrialEndsAt' => $billable->onGenericTrial() ? $billable->genericTrialEndsAt()->translatedFormat(config('spark.date_format', 'F j, Y')) : null,
             'homeCountry' => $homeCountry,
+            'lastPayment' => function () use ($subscription) {
+                $latestInvoice = $subscription ? $subscription->latestInvoice() : null;
+
+                return $latestInvoice ?
+                    ['amount' => $latestInvoice->realTotal(), 'date' => $latestInvoice->date()->translatedFormat(config('spark.date_format', 'F j, Y'))]
+                    : null;
+            },
             'message' => request('message', ''),
             'monthlyPlans' => $plans->where('interval', 'monthly')->where('active', true)->values(),
             'nextPayment' => function () use ($subscription) {
@@ -178,12 +185,20 @@ class FrontendState
      */
     protected function state(Model $billable, $subscription)
     {
+        if (! $subscription && request('checkout') === 'subscription_started') {
+            return 'pending';
+        }
+
         if ($subscription && $subscription->onGracePeriod()) {
             return 'onGracePeriod';
         }
 
         if ($subscription && $subscription->active()) {
             return 'active';
+        }
+
+        if ($subscription && $subscription->pastDue()) {
+            return 'past_due';
         }
 
         return 'none';

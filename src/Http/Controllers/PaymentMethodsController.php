@@ -3,6 +3,7 @@
 namespace Spark\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Spark\Features;
 
 class PaymentMethodsController
@@ -54,6 +55,14 @@ class PaymentMethodsController
             'payment_method' => ['required', 'string'],
         ]);
 
-        $this->billable()->deletePaymentMethod($request->payment_method);
+        $billable = $this->billable();
+
+        if ($billable->defaultPaymentMethod()->id === $request->payment_method) {
+            throw ValidationException::withMessages([
+                '*' => __('The default payment method cannot be removed.'),
+            ]);
+        }
+
+        $billable->deletePaymentMethod($request->payment_method);
     }
 }

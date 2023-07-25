@@ -27,20 +27,22 @@ class WebhookController extends CashierController
         if ($billable = $this->getUserByStripeId($payload['data']['object']['customer'])) {
             $subscription = $billable->subscriptions()->where('stripe_id', $payload['data']['object']['id'])->first();
 
-            $oldStatus = $subscription->stripe_status;
+            if ($subscription) {
+                $oldStatus = $subscription->stripe_status;
 
-            $newStatus = $payload['data']['object']['status'] ?? null;
+                $newStatus = $payload['data']['object']['status'] ?? null;
 
-            parent::handleCustomerSubscriptionUpdated($payload);
+                parent::handleCustomerSubscriptionUpdated($payload);
 
-            if ($newStatus &&
-                $newStatus == Subscription::STATUS_ACTIVE &&
-                ! in_array($oldStatus, [Subscription::STATUS_ACTIVE, Subscription::STATUS_TRIALING])) {
-                event(new SubscriptionCreated($billable, $subscription->refresh()));
+                if ($newStatus &&
+                    $newStatus == Subscription::STATUS_ACTIVE &&
+                    ! in_array($oldStatus, [Subscription::STATUS_ACTIVE, Subscription::STATUS_TRIALING])) {
+                    event(new SubscriptionCreated($billable, $subscription->refresh()));
 
-                $billable->update(['trial_ends_at' => null]);
-            } else {
-                event(new SubscriptionUpdated($billable, $subscription->refresh()));
+                    $billable->update(['trial_ends_at' => null]);
+                } else {
+                    event(new SubscriptionUpdated($billable, $subscription->refresh()));
+                }
             }
         }
 

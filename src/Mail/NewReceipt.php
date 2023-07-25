@@ -57,7 +57,7 @@ class NewReceipt extends Mailable
         $filename = $receiptData['product'].'_'.$this->invoice->date()->month.'_'.$this->invoice->date()->year;
 
         return $this->markdown('spark::mail.receipt')
-                    ->subject(__('Your :invoiceName invoice is now available!', ['invoiceName' => $this->invoice->date()->format('F Y')]))
-                    ->attachData($this->invoice->pdf($receiptData), $filename.'.pdf');
+            ->subject(__('Your :invoiceName invoice is now available!', ['invoiceName' => $this->invoice->date()->format('F Y')]))
+            ->attachData($this->invoice->pdf($receiptData), $filename.'.pdf');
     }
 }

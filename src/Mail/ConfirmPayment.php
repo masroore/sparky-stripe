@@ -47,6 +47,6 @@ class ConfirmPayment extends Mailable
         $url = route('cashier.payment', ['id' => $this->paymentId]);
 
         return $this->markdown('spark::mail.confirm_payment', compact('url'))
-                    ->subject(__('Confirm Payment'));
+            ->subject(__('Confirm Payment'));
     }
 }

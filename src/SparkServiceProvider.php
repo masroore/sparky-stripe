@@ -5,11 +5,13 @@ namespace Spark;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Cashier\Cashier;
+use Laravel\Cashier\Events\WebhookHandled;
 use RuntimeException;
 use Spark\Contracts\Actions\CalculatesVatRate;
 use Spark\Contracts\Actions\CreatesSubscriptions;
 use Spark\Contracts\Actions\PaysInvoices;
 use Spark\Contracts\Actions\UpdatesSubscriptions;
+use Spark\Listeners\SetupDefaultPaymentMethod;
 
 class SparkServiceProvider extends ServiceProvider
 {
@@ -54,6 +56,7 @@ class SparkServiceProvider extends ServiceProvider
         $this->configureMigrations();
         $this->configureTranslations();
         $this->configurePublishing();
+        $this->configureListeners();
     }
 
     /**
@@ -120,6 +123,16 @@ class SparkServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'spark-migrations');
+    }
+
+    /**
+     * Configure the Spark event listeners.
+     *
+     * @return void
+     */
+    protected function configureListeners()
+    {
+        $this->app['events']->listen(WebhookHandled::class, SetupDefaultPaymentMethod::class);
     }
 
     /**
